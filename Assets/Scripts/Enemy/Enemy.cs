@@ -87,8 +87,8 @@ public class Enemy : MonoBehaviour
                 Debug.Log("YEAH!");
                 intransit = false;
             }
-
-            agent.SetDestination(location.position);    
+            if(intransit)
+                agent.SetDestination(location.position);    
         }
         else
         {

@@ -5,9 +5,9 @@ using UnityEngine.UI;
 public class Charm : MonoBehaviour
 {
     public string activeKey;
-    public Image cover;
+    /*public Image cover;
     public Sprite inActive;
-    public Sprite active;
+    public Sprite active;*/
     public CharmUse abl;
     public float time;
     float prevT;
@@ -28,14 +28,14 @@ public class Charm : MonoBehaviour
 
     public void setActive()
     {
-        cover.sprite = active;
+        //cover.sprite = active;
         prevT = Time.fixedTime;
         abl.use();
         use = true;
     }
     public void inAct()
     {
-        cover.sprite = inActive;
+        //cover.sprite = inActive;
     }
     public string getActiveKey()
     {
