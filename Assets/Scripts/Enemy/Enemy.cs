@@ -14,16 +14,20 @@ public class Enemy : MonoBehaviour
     public float MAXHEALTH = 100;
     public float health = 100;
 
-    public bool intransit;
+   
 
     public string targetToKill;
 
-    public Transform location;
+
+    private bool intransit;
+    private Transform location;
+    private float maxRange;
     // Start is called before the first frame update
     void Start()
     {
         health = MAXHEALTH; // set health
 
+        maxRange = range;
 
         GameObject[] target = GameObject.FindGameObjectsWithTag("Cover");
         covers = new Transform[target.Length];
@@ -31,10 +35,6 @@ public class Enemy : MonoBehaviour
         {
             covers[i] = target[i].transform;
         }
-        /*
-         * TODO:
-         * make it find the closest enemy and fire at that
-         */
         
     }
 
@@ -45,7 +45,7 @@ public class Enemy : MonoBehaviour
         if (health > 0f)
         {
 
-            range = 100f - (health / MAXHEALTH);
+            range = maxRange - ((health / MAXHEALTH) / 20);
             location = player;
 
             if (Random.Range(0, MAXHEALTH) >= health && !intransit)
@@ -72,6 +72,7 @@ public class Enemy : MonoBehaviour
                 }
                 else
                 {
+                    Debug.Log("Close enough ngl");
                     intransit = false;
                     transform.Find("GUN").transform.GetComponent<EnemyGun>().decideShoot();
                     location = this.transform;
@@ -87,7 +88,7 @@ public class Enemy : MonoBehaviour
                 intransit = false;
             }
 
-            agent.SetDestination(location.position);
+            agent.SetDestination(location.position);    
         }
         else
         {
