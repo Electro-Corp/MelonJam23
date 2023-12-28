@@ -1,438 +1,996 @@
-// Some stupid rigidbody based movement by Dani
-
+// Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+// PlayerMovement
 using System;
-using UnityEditor;
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour {
-
-    //Assingables
-    [Header("Assingables")]
-    public Transform playerCam;
-    public Transform orientation;
-    
-    //Other
-    [Header("Other")]
-    private Rigidbody rb;
-
-    //Rotation and look
-    [Header("Rotation and Look")]
-    private float xRotation;
-    private float sensitivity = 50f;
-    private float sensMultiplier = 1f;
-    
-    //Movement
-    [Header("Movement")]
-    public float moveSpeed = 4500;
-    public float maxSpeed = 20;
-    public bool grounded;
-    public LayerMask whatIsGround;
-
-    
-    [Header("Counter Movement and other stuff idrk")]
-    public float counterMovement = 0.175f;
-    private float threshold = 0.01f;
-    public float maxSlopeAngle = 35f;
-
-    //Crouch & Slide
-    [Header("Crouching and Sliding")]
-    private Vector3 crouchScale = new Vector3(1, 0.5f, 1);
-    private Vector3 playerScale;
-    public float slideForce = 400;
-    public float slideCounterMovement = 0.2f;
-
-    //Jumping
-    [Header("Jumping")]
-    private bool readyToJump = true;
-    private float jumpCooldown = 0.25f;
-    public float jumpForce = 550f;
-
-    //Bounce 
-    [Header("Bounce")]
-    public float bounceForce = 300f;
-    public LayerMask whatIsBounce;
-
-    //Input
-    [Header("Input")]
-    float x, y;
-    bool jumping, sprinting, crouching;
-    
-    //Sliding
-    [Header("Slding")]
-    private Vector3 normalVector = Vector3.up;
-    private Vector3 wallNormalVector;
-
-    [Header("Wall Stuff")]
-    public bool walled;
-    public float wallCheckDistance = .02f;
-    private bool wallLeft;
-    private bool wallRight;
-    private RaycastHit leftWallhit;
-    private RaycastHit rightWallhit;
-    public float wallJumpMulitplierVertical = .2f;
-    public float wallJumpMulitplierHorizontal = .75f;
-    public Vector2 wallJumpPower = new Vector2(8f, 12f);
-    private float wallJumpingDirection;
-
-    // Other stuff
-    private int collisionCount = 0;
-
-    void Awake() {
-        rb = GetComponent<Rigidbody>();
-    }
-    
-    void Start() {
-        playerScale =  transform.localScale;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
-    
-    private void FixedUpdate() {
-        Movement();
-        SetGravity();
-    }
-
-    private void Update() {
-        MyInput();
-        Look();
-    }
-
-    /// <summary>
-    /// Find user input. Should put this in its own class but im lazy
-    /// </summary>
-    private void MyInput() {
-        x = Input.GetAxisRaw("Horizontal");
-        y = Input.GetAxisRaw("Vertical");
-        jumping = Input.GetButton("Jump");
-        crouching = Input.GetKey(KeyCode.LeftControl);
-
-        //Crouching
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-            StartCrouch();
-        if (Input.GetKeyUp(KeyCode.LeftControl))
-            StopCrouch();
-    }
-
-    private void StartCrouch() {
-        transform.localScale = crouchScale;
-        transform.position = new Vector3(transform.position.x, transform.position.y - 0.5f, transform.position.z);
-        if (rb.velocity.magnitude > 0.5f) {
-            if (grounded) {
-                rb.AddForce(orientation.transform.forward * slideForce);
-            }
-        }
-    }
-
-    private void StopCrouch() {
-        transform.localScale = playerScale;
-        transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-    }
-
-    private void Movement() {
-        //Extra gravity
-        rb.AddForce(Vector3.down * Time.deltaTime * 10);
-        
-        //Find actual velocity relative to where player is looking
-        Vector2 mag = FindVelRelativeToLook();
-        float xMag = mag.x, yMag = mag.y;
-
-        //Counteract sliding and sloppy movement
-        CounterMovement(x, y, mag);
-        
-        //If holding jump && ready to jump, then jump
-        if (readyToJump && jumping) Jump();
-
-        //Set max speed
-        float maxSpeed = this.maxSpeed;
-        
-        //If sliding down a ramp, add force down so player stays grounded and also builds speed
-        if (crouching && grounded && readyToJump) {
-            rb.AddForce(Vector3.down * Time.deltaTime * 3000);
-            return;
-        }
-        
-        //If speed is larger than maxspeed, cancel out the input so you don't go over max speed
-        if (x > 0 && xMag > maxSpeed) x = 0;
-        if (x < 0 && xMag < -maxSpeed) x = 0;
-        if (y > 0 && yMag > maxSpeed) y = 0;
-        if (y < 0 && yMag < -maxSpeed) y = 0;
-
-        //Some multipliers
-        float multiplier = .75f, multiplierV = .75f;
-        
-        // Movement in air
-        if (!grounded) {
-            multiplier = 0.5f;
-            multiplierV = 0.5f;
-        }
-        
-        // Movement while sliding
-        if (grounded && crouching) multiplierV = 0f;
-
-        if (walled) multiplier = 0f;
-
-        //Apply forces to move player
-        rb.AddForce(orientation.transform.forward * y * moveSpeed * Time.deltaTime * multiplier * multiplierV);
-        rb.AddForce(orientation.transform.right * x * moveSpeed * Time.deltaTime * multiplier);
-    }
-
-    private void Jump() {
-        if (grounded && readyToJump) {
-            readyToJump = false;
-
-            //Add jump forces
-            rb.AddForce(Vector2.up * jumpForce * 1.5f);
-            rb.AddForce(normalVector * jumpForce * 0.5f);
-            
-            //If jumping while falling, reset y velocity.
-            Vector3 vel = rb.velocity;
-            if (rb.velocity.y < 0.5f)
-                rb.velocity = new Vector3(vel.x, 0, vel.z);
-            else if (rb.velocity.y > 0) 
-                rb.velocity = new Vector3(vel.x, vel.y / 2, vel.z);
-            
-            Invoke(nameof(ResetJump), jumpCooldown);
-        }
-
-        if(walled && readyToJump) {
-            readyToJump = false;
-            walled = false; 
-            
-            // rb.AddForce(Vector2.up * jumpForce * wallJumpMulitplierVertical);
-            /* if(wallRight)
-            {
-                rb.AddForce(-rightWallhit.normal * jumpForce * .5f);
-            } else {
-                rb.AddForce(-leftWallhit.normal * jumpForce * .5f);
-            } */
-            
-            wallJumpingDirection = -transform.localScale.x;
-            // This line is funny
-            // rb.velocity = new Vector2(wallJumpingDirection * jumpForce * .75f, wallJumpMulitplierHorizontal * wallJumpMulitplierVertical);
-
-            rb.velocity = new Vector3(wallJumpingDirection * wallJumpPower.x, wallJumpPower.y, rb.velocity.z);
-            
-            /*if (transform.localScale.x != wallJumpingDirection)
-            {
-                // isFacingRight = !isFacingRight;
-                Vector3 localScale = transform.localScale;
-                localScale.x *= -1f;
-                transform.localScale = localScale;
-            }*/
-
-            Invoke(nameof(ResetJump), jumpCooldown);
-        }
-    }
-    
-    private void ResetJump() {
-        readyToJump = true;
-    }
-    
-    private float desiredX;
-    private void Look() {
-        float mouseX = Input.GetAxis("Mouse X") * sensitivity * Time.fixedDeltaTime * sensMultiplier;
-        float mouseY = Input.GetAxis("Mouse Y") * sensitivity * Time.fixedDeltaTime * sensMultiplier;
-
-        //Find current look rotation
-        Vector3 rot = playerCam.transform.localRotation.eulerAngles;
-        desiredX = rot.y + mouseX;
-        
-        //Rotate, and also make sure we dont over- or under-rotate.
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-
-        //Perform the rotations
-        playerCam.transform.localRotation = Quaternion.Euler(xRotation, desiredX, 0);
-        orientation.transform.localRotation = Quaternion.Euler(0, desiredX, 0);
-    }
-
-    private void CounterMovement(float x, float y, Vector2 mag) {
-        if (!grounded || jumping) return;
-
-        //Slow down sliding
-        if (crouching) {
-            rb.AddForce(moveSpeed * Time.deltaTime * -rb.velocity.normalized * slideCounterMovement);
-            return;
-        }
-
-        //Counter movement
-        if (Math.Abs(mag.x) > threshold && Math.Abs(x) < 0.05f || (mag.x < -threshold && x > 0) || (mag.x > threshold && x < 0)) {
-            rb.AddForce(moveSpeed * orientation.transform.right * Time.deltaTime * -mag.x * counterMovement);
-        }
-        if (Math.Abs(mag.y) > threshold && Math.Abs(y) < 0.05f || (mag.y < -threshold && y > 0) || (mag.y > threshold && y < 0)) {
-            rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * -mag.y * counterMovement);
-        }
-        
-        //Limit diagonal running. This will also cause a full stop if sliding fast and un-crouching, so not optimal.
-        if (Mathf.Sqrt((Mathf.Pow(rb.velocity.x, 2) + Mathf.Pow(rb.velocity.z, 2))) > maxSpeed) {
-            float fallspeed = rb.velocity.y;
-            Vector3 n = rb.velocity.normalized * maxSpeed;
-            rb.velocity = new Vector3(n.x, fallspeed, n.z);
-        }
-    }
-
-
-    public Vector2 FindVelRelativeToLook() {
-        float lookAngle = orientation.transform.eulerAngles.y;
-        float moveAngle = Mathf.Atan2(rb.velocity.x, rb.velocity.z) * Mathf.Rad2Deg;
-
-        float u = Mathf.DeltaAngle(lookAngle, moveAngle);
-        float v = 90 - u;
-
-        float magnitue = rb.velocity.magnitude;
-        float yMag = magnitue * Mathf.Cos(u * Mathf.Deg2Rad);
-        float xMag = magnitue * Mathf.Cos(v * Mathf.Deg2Rad);
-        
-        return new Vector2(xMag, yMag);
-    }
-
-    public void applyBounce() {
-        rb.AddForce(Vector2.up * bounceForce * 1.5f);
-        rb.AddForce(normalVector * bounceForce * 0.5f);
-    }
-
-    private int IsFloor(Vector3 v, int cl) {
-        float angle = Vector3.Angle(Vector3.up, v);
-        bool floor_slope = angle < maxSlopeAngle;
-        bool bouncy = cl == whatIsBounce;
-        if (floor_slope && !bouncy) {
-            return 0;  // Floor
-        } else if (bouncy) {
-            return 1; // Bounce Pad
-        } else if (!bouncy && !floor_slope) {
-            return 2; // Wall/Steep Slope
-        }
-
-        return 30; // undefined type of object
-            
-    }
-
-    private bool cancellingGrounded;
-
-    private void OnCollisionStay(Collision other) {
-        //Make sure we are only checking for walkable layers
-        int collided_layer = other.gameObject.layer;
-
-        Debug.Log("Collided Layer: " + Mathf.Log(collided_layer, 2));
-        Debug.Log("What is bounce: " + Mathf.Log(whatIsBounce.value, 2));
-        Debug.Log("What is ground: " + Mathf.Log(whatIsGround.value, 2));
-
-
-        if (Mathf.Log(whatIsGround.value, 2) != (int) Mathf.Log(collided_layer, 2)) {
-            Debug.Log("Not Grounded");
-        }
-
-        if (Mathf.Log(whatIsBounce.value, 2) != (int) Mathf.Log(collided_layer, 2)) {
-            Debug.Log(Mathf.Log(whatIsBounce.value, 2) + "    " + (int) Mathf.Log(collided_layer, 2));
-            Debug.Log("Not Bounce");
-        }
-
-        
-
-        Debug.Log("Grounded");
-        //Iterate through every collision in a physics update
-        for (int i = 0; i < other.contactCount; i++) {
-            Vector3 normal = other.contacts[i].normal;
-            
-            //FLOOR
-            if (IsFloor(normal, (int) Mathf.Log(collided_layer, 2)) == 0) {
-                grounded = true;
-                walled = false;
-                rb.useGravity = true;
-                cancellingGrounded = false;
-                normalVector = normal;
-                CancelInvoke(nameof(StopGrounded));
-            } else if (IsFloor(normal, (int) Mathf.Log(collided_layer, 2)) == 1) {
-                applyBounce();
-                walled = false;
-                rb.useGravity = true;
-            } else if (IsFloor(normal, (int) Mathf.Log(collided_layer, 2)) == 2) {
-                IsWalled();
-                wallRight = Physics.Raycast(transform.position, orientation.right, out rightWallhit, wallCheckDistance);
-                wallLeft = Physics.Raycast(transform.position, -orientation.right, out leftWallhit, wallCheckDistance);
-            }
-        }
-
-        float delay = 3f;
-        if (!cancellingGrounded) {
-            cancellingGrounded = true;
-            Invoke(nameof(StopGrounded), Time.deltaTime * delay);
-        }
-    }
-
-    private void OnCollisionEnter() {
-        collisionCount ++;
-    }
-
-    private void OnCollisionExit() {
-        collisionCount --;
-    }
-
-    private void StopGrounded() {
-        grounded = false;
-    }
-    
-    private void IsWalled() {
-        // Fail Conditions
-        if (grounded) { 
-            walled = false;
-            rb.useGravity = true;
-            return;
-        }
-
-        walled = true;
-
-        rb.useGravity = false;
-
-        Vector3 wallNormal;
-        if(wallRight) {
-            wallNormal = rightWallhit.normal;
-        } else {
-            wallNormal = leftWallhit.normal;
-        }
-
-        Vector3 wallForward = Vector3.Cross(wallNormal, transform.up);
-
-        if((orientation.forward - wallForward).magnitude > (orientation.forward + wallForward).magnitude) 
-        {
-            wallForward= -wallForward;
-        }
-
-        rb.AddForce(wallForward/* * wallRunForce*/, ForceMode.Force);
-
-        // FOrce towards wal
-        if (!(wallLeft && x > 0) && !(wallRight && x < 0))
-        {
-            rb.AddForce(-wallNormal * 500, ForceMode.Force);
-        }
-
-        // forc e down
-        rb.AddForce(new Vector3(0f, -6, 0f), ForceMode.Force);
-    }
-
-    private bool PressingMovementButtonForWallSlide() {
-        if(Input.GetAxisRaw("Horizontal") > 0) {
-            return true;
-        }
-
-        if(Input.GetAxisRaw("Vertical") != 0) {
-            return true;
-        }
-        return false;
-    }
-
-    private void WallJump() {
-        walled = false;
-    }
-
-    private void SetGravity() {
-        if (collisionCount == 0) {
-            rb.useGravity = true;
-            walled = false;
-        }
-
-        
-    }
+public class PlayerMovement : MonoBehaviour
+{
+	public GameObject spawnWeapon;
 
+	private float sensitivity = 50f;
+
+	private float sensMultiplier = 1f;
+
+	private bool dead;
+
+	public PhysicMaterial deadMat;
+
+	public Transform playerCam;
+
+	public Transform orientation;
+
+	public Transform gun;
+
+	private float xRotation;
+
+	public Rigidbody rb;
+
+	private float moveSpeed = 4500f;
+
+	private float walkSpeed = 20f;
+
+	private float runSpeed = 10f;
+
+	public bool grounded;
+
+	public Transform groundChecker;
+
+	public LayerMask whatIsGround;
+
+	public LayerMask whatIsWallrunnable;
+
+	private bool readyToJump;
+
+	private float jumpCooldown = 0.25f;
+
+	private float jumpForce = 550f;
+
+	private float x;
+
+	private float y;
+
+	private bool jumping;
+
+	private bool sprinting;
+
+	private bool crouching;
+
+	public LineRenderer lr;
+
+	private Vector3 grapplePoint;
+
+	private SpringJoint joint;
+
+	private Vector3 normalVector;
+
+	private Vector3 wallNormalVector;
+
+	private bool wallRunning;
+
+	private Vector3 wallRunPos;
+
+	private DetectWeapons detectWeapons;
+
+	public ParticleSystem ps;
+
+	private ParticleSystem.EmissionModule psEmission;
+
+	private Collider playerCollider;
+
+	public bool exploded;
+
+	public bool paused;
+
+	public LayerMask whatIsGrabbable;
+
+	private Rigidbody objectGrabbing;
+
+	private Vector3 previousLookdir;
+
+	private Vector3 grabPoint;
+
+	private float dragForce = 700000f;
+
+	private SpringJoint grabJoint;
+
+	private LineRenderer grabLr;
+
+	private Vector3 myGrabPoint;
+
+	private Vector3 myHandPoint;
+
+	private Vector3 endPoint;
+
+	private Vector3 grappleVel;
+
+	private float offsetMultiplier;
+
+	private float offsetVel;
+
+	private float distance;
+
+	private float slideSlowdown = 0.2f;
+
+	private float actualWallRotation;
+
+	private float wallRotationVel;
+
+	private float desiredX;
+
+	private bool cancelling;
+
+	private bool readyToWallrun = true;
+
+	private float wallRunGravity = 1f;
+
+	private float maxSlopeAngle = 35f;
+
+	private float wallRunRotation;
+
+	private bool airborne;
+
+	private int nw;
+
+	private bool onWall;
+
+	private bool onGround;
+
+	private bool surfing;
+
+	private bool cancellingGrounded;
+
+	private bool cancellingWall;
+
+	private bool cancellingSurf;
+
+	public LayerMask whatIsHittable;
+
+	private float desiredTimeScale = 1f;
+
+	private float timeScaleVel;
+
+	private float actionMeter;
+
+	private float vel;
+
+	public static PlayerMovement Instance { get; private set; }
+
+	private void Awake()
+	{
+		Instance = this;
+		rb = GetComponent<Rigidbody>();
+	}
+
+	private void Start()
+	{
+		psEmission = ps.emission;
+		playerCollider = GetComponent<Collider>();
+		detectWeapons = (DetectWeapons)GetComponentInChildren(typeof(DetectWeapons));
+		Cursor.lockState = CursorLockMode.Locked;
+		Cursor.visible = false;
+		readyToJump = true;
+		wallNormalVector = Vector3.up;
+		CameraShake();
+		if (spawnWeapon != null)
+		{
+			GameObject gameObject = UnityEngine.Object.Instantiate(spawnWeapon, transform.position, Quaternion.identity);
+			detectWeapons.ForcePickup(gameObject);
+		}
+		UpdateSensitivity();
+	}
+
+	public void UpdateSensitivity()
+	{
+		if ((bool)GameState.Instance)
+		{
+			sensMultiplier = GameState.Instance.GetSensitivity();
+		}
+	}
+
+	private void LateUpdate()
+	{
+		if (!dead && !paused)
+		{
+			DrawGrapple();
+			DrawGrabbing();
+			WallRunning();
+		}
+	}
+
+	private void FixedUpdate()
+	{
+		if (!dead && !Game.Instance.done && !paused)
+		{
+			Movement();
+		}
+	}
+
+	private void Update()
+	{
+		UpdateActionMeter();
+		MyInput();
+		if (!dead && !Game.Instance.done && !paused)
+		{
+			Look();
+			DrawGrabbing();
+			UpdateTimescale();
+			if (transform.position.y < -200f)
+			{
+				KillPlayer();
+			}
+		}
+	}
+
+	private void MyInput()
+	{
+		if (dead || Game.Instance.done)
+		{
+			return;
+		}
+
+		x = Input.GetAxisRaw("Horizontal");
+		y = Input.GetAxisRaw("Vertical");
+		jumping = Input.GetButton("Jump");
+		crouching = Input.GetButton("Crouch");
+		if (Input.GetButtonDown("Cancel"))
+		{
+			Pause();
+		}
+		if (paused)
+		{
+			return;
+		}
+		if (Input.GetButtonDown("Crouch"))
+		{
+			StartCrouch();
+		}
+		if (Input.GetButtonUp("Crouch"))
+		{
+			StopCrouch();
+		}
+		if (Input.GetButton("Fire1"))
+		{
+			if (detectWeapons.HasGun())
+			{
+				detectWeapons.Shoot(HitPoint());
+			}
+			else
+			{
+				GrabObject();
+			}
+		}
+		if (Input.GetButtonUp("Fire1"))
+		{
+			detectWeapons.StopUse();
+			if ((bool)objectGrabbing)
+			{
+				StopGrab();
+			}
+		}
+		if (Input.GetButtonDown("Pickup"))
+		{
+			detectWeapons.Pickup();
+		}
+		if (Input.GetButtonDown("Drop"))
+		{
+			detectWeapons.Throw((HitPoint() - detectWeapons.weaponPos.position).normalized);
+		}
+	}
+
+	private void Pause()
+	{
+		if (!dead)
+		{
+			if (paused)
+			{
+				Time.timeScale = 1f;
+				UIManger.Instance.DeadUI(b: false);
+				Cursor.lockState = CursorLockMode.Locked;
+				Cursor.visible = false;
+				paused = false;
+			}
+			else
+			{
+				paused = true;
+				Time.timeScale = 0f;
+				UIManger.Instance.DeadUI(b: true);
+				Cursor.lockState = CursorLockMode.None;
+				Cursor.visible = true;
+			}
+		}
+	}
+
+	private void UpdateTimescale()
+	{
+		if (!Game.Instance.done && !paused && !dead)
+		{
+			Time.timeScale = Mathf.SmoothDamp(Time.timeScale, desiredTimeScale, ref timeScaleVel, 0.15f);
+		}
+	}
+
+	private void GrabObject()
+	{
+		if (objectGrabbing == null)
+		{
+			StartGrab();
+		}
+		else
+		{
+			HoldGrab();
+		}
+	}
+
+	private void DrawGrabbing()
+	{
+		if ((bool)objectGrabbing)
+		{
+			myGrabPoint = Vector3.Lerp(myGrabPoint, objectGrabbing.position, Time.deltaTime * 45f);
+			myHandPoint = Vector3.Lerp(myHandPoint, grabJoint.connectedAnchor, Time.deltaTime * 45f);
+			grabLr.SetPosition(0, myGrabPoint);
+			grabLr.SetPosition(1, myHandPoint);
+		}
+	}
+
+	private void StartGrab()
+	{
+		RaycastHit[] array = Physics.RaycastAll(playerCam.transform.position, playerCam.transform.forward, 8f, whatIsGrabbable);
+		if (array.Length < 1)
+		{
+			return;
+		}
+		for (int i = 0; i < array.Length; i++)
+		{
+			MonoBehaviour.print("testing on: " + array[i].collider.gameObject.layer);
+			if ((bool)array[i].transform.GetComponent<Rigidbody>())
+			{
+				objectGrabbing = array[i].transform.GetComponent<Rigidbody>();
+				grabPoint = array[i].point;
+				grabJoint = objectGrabbing.gameObject.AddComponent<SpringJoint>();
+				grabJoint.autoConfigureConnectedAnchor = false;
+				grabJoint.minDistance = 0f;
+				grabJoint.maxDistance = 0f;
+				grabJoint.damper = 4f;
+				grabJoint.spring = 40f;
+				grabJoint.massScale = 5f;
+				objectGrabbing.angularDrag = 5f;
+				objectGrabbing.drag = 1f;
+				previousLookdir = playerCam.transform.forward;
+				grabLr = objectGrabbing.gameObject.AddComponent<LineRenderer>();
+				grabLr.positionCount = 2;
+				grabLr.startWidth = 0.05f;
+				grabLr.material = new Material(Shader.Find("Sprites/Default"));
+				grabLr.numCapVertices = 10;
+				grabLr.numCornerVertices = 10;
+				break;
+			}
+		}
+	}
+
+	private void HoldGrab()
+	{
+		grabJoint.connectedAnchor = playerCam.transform.position + playerCam.transform.forward * 5.5f;
+		grabLr.startWidth = 0f;
+		grabLr.endWidth = 0.0075f * objectGrabbing.velocity.magnitude;
+		previousLookdir = playerCam.transform.forward;
+	}
+
+	private void StopGrab()
+	{
+		UnityEngine.Object.Destroy(grabJoint);
+		UnityEngine.Object.Destroy(grabLr);
+		objectGrabbing.angularDrag = 0.05f;
+		objectGrabbing.drag = 0f;
+		objectGrabbing = null;
+	}
+
+	private void StartCrouch()
+	{
+		float num = 400f;
+		transform.localScale = new Vector3(1f, 0.5f, 1f);
+		transform.position = new Vector3(transform.position.x, transform.position.y - 0.5f, transform.position.z);
+		if (rb.velocity.magnitude > 0.1f && grounded)
+		{
+			rb.AddForce(orientation.transform.forward * num);
+			AudioManager.Instance.Play("StartSlide");
+			AudioManager.Instance.Play("Slide");
+		}
+	}
+
+	private void StopCrouch()
+	{
+		transform.localScale = new Vector3(1f, 1.5f, 1f);
+		transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+	}
+
+	private void DrawGrapple()
+	{
+		if (grapplePoint == Vector3.zero || joint == null)
+		{
+			lr.positionCount = 0;
+			return;
+		}
+		lr.positionCount = 2;
+		endPoint = Vector3.Lerp(endPoint, grapplePoint, Time.deltaTime * 15f);
+		offsetMultiplier = Mathf.SmoothDamp(offsetMultiplier, 0f, ref offsetVel, 0.1f);
+		int num = 100;
+		lr.positionCount = num;
+		Vector3 position = gun.transform.GetChild(0).position;
+		float num2 = Vector3.Distance(endPoint, position);
+		lr.SetPosition(0, position);
+		lr.SetPosition(num - 1, endPoint);
+		float num3 = num2;
+		float num4 = 1f;
+		for (int i = 1; i < num - 1; i++)
+		{
+			float num5 = (float)i / (float)num;
+			float num6 = num5 * offsetMultiplier;
+			float num7 = (Mathf.Sin(num6 * num3) - 0.5f) * num4 * (num6 * 2f);
+			Vector3 normalized = (endPoint - position).normalized;
+			float num8 = Mathf.Sin(num5 * 180f * ((float)Math.PI / 180f));
+			float num9 = Mathf.Cos(offsetMultiplier * 90f * ((float)Math.PI / 180f));
+			Vector3 position2 = position + (endPoint - position) / num * i + ((Vector3)(num9 * num7 * Vector2.Perpendicular(normalized)) + offsetMultiplier * num8 * Vector3.down);
+			lr.SetPosition(i, position2);
+		}
+	}
+
+	private void FootSteps()
+	{
+		if (!crouching && !dead && (grounded || wallRunning))
+		{
+			float num = 1.2f;
+			float num2 = rb.velocity.magnitude;
+			if (num2 > 20f)
+			{
+				num2 = 20f;
+			}
+			distance += num2;
+			if (distance > 300f / num)
+			{
+				AudioManager.Instance.PlayFootStep();
+				distance = 0f;
+			}
+		}
+	}
+
+	private void Movement()
+	{
+		if (dead)
+		{
+			return;
+		}
+		rb.AddForce(Vector3.down * Time.deltaTime * 10f);
+		Vector2 mag = FindVelRelativeToLook();
+		float num = mag.x;
+		float num2 = mag.y;
+		FootSteps();
+		CounterMovement(x, y, mag);
+		if (readyToJump && jumping)
+		{
+			Jump();
+		}
+		float num3 = walkSpeed;
+		if (sprinting)
+		{
+			num3 = runSpeed;
+		}
+		if (crouching && grounded && readyToJump)
+		{
+			rb.AddForce(Vector3.down * Time.deltaTime * 3000f);
+			return;
+		}
+		if (x > 0f && num > num3)
+		{
+			x = 0f;
+		}
+		if (x < 0f && num < 0f - num3)
+		{
+			x = 0f;
+		}
+		if (y > 0f && num2 > num3)
+		{
+			y = 0f;
+		}
+		if (y < 0f && num2 < 0f - num3)
+		{
+			y = 0f;
+		}
+		float num4 = 1f;
+		float num5 = 1f;
+		if (!grounded)
+		{
+			num4 = 0.5f;
+			num5 = 0.5f;
+		}
+		if (grounded && crouching)
+		{
+			num5 = 0f;
+		}
+		if (wallRunning)
+		{
+			num5 = 0.3f;
+			num4 = 0.3f;
+		}
+		if (surfing)
+		{
+			num4 = 0.7f;
+			num5 = 0.3f;
+		}
+		rb.AddForce(orientation.transform.forward * y * moveSpeed * Time.deltaTime * num4 * num5);
+		rb.AddForce(orientation.transform.right * x * moveSpeed * Time.deltaTime * num4);
+		SpeedLines();
+	}
+
+	private void SpeedLines()
+	{
+		float num = Vector3.Angle(rb.velocity, playerCam.transform.forward) * 0.15f;
+		if (num < 1f)
+		{
+			num = 1f;
+		}
+		float rateOverTimeMultiplier = rb.velocity.magnitude / num;
+		if (grounded && !wallRunning)
+		{
+			rateOverTimeMultiplier = 0f;
+		}
+		psEmission.rateOverTimeMultiplier = rateOverTimeMultiplier;
+	}
+
+	private void CameraShake()
+	{
+		float num = rb.velocity.magnitude / 9f;
+		CameraShaker.Instance.ShakeOnce(num, 0.1f * num, 0.25f, 0.2f);
+		Invoke("CameraShake", 0.2f);
+	}
+
+	private void ResetJump()
+	{
+		readyToJump = true;
+	}
+
+	private void Jump()
+	{
+		if ((grounded || wallRunning || surfing) && readyToJump)
+		{
+			MonoBehaviour.print("jumping");
+			Vector3 velocity = rb.velocity;
+			readyToJump = false;
+			rb.AddForce(Vector2.up * jumpForce * 1.5f);
+			rb.AddForce(normalVector * jumpForce * 0.5f);
+			if (rb.velocity.y < 0.5f)
+			{
+				rb.velocity = new Vector3(velocity.x, 0f, velocity.z);
+			}
+			else if (rb.velocity.y > 0f)
+			{
+				rb.velocity = new Vector3(velocity.x, velocity.y / 2f, velocity.z);
+			}
+			if (wallRunning)
+			{
+				rb.AddForce(wallNormalVector * jumpForce * 3f);
+			}
+			Invoke("ResetJump", jumpCooldown);
+			if (wallRunning)
+			{
+				wallRunning = false;
+			}
+			AudioManager.Instance.PlayJump();
+		}
+	}
+
+	private void Look()
+	{
+		float num = Input.GetAxis("Mouse X") * sensitivity * Time.fixedDeltaTime * sensMultiplier;
+		float num2 = Input.GetAxis("Mouse Y") * sensitivity * Time.fixedDeltaTime * sensMultiplier;
+		desiredX = playerCam.transform.localRotation.eulerAngles.y + num;
+		xRotation -= num2;
+		xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+		FindWallRunRotation();
+		actualWallRotation = Mathf.SmoothDamp(actualWallRotation, wallRunRotation, ref wallRotationVel, 0.2f);
+		playerCam.transform.localRotation = Quaternion.Euler(xRotation, desiredX, actualWallRotation);
+		orientation.transform.localRotation = Quaternion.Euler(0f, desiredX, 0f);
+	}
+
+	private void CounterMovement(float x, float y, Vector2 mag)
+	{
+		if (!grounded || jumping || exploded)
+		{
+			return;
+		}
+		float num = 0.16f;
+		float num2 = 0.01f;
+		if (crouching)
+		{
+			rb.AddForce(moveSpeed * Time.deltaTime * -rb.velocity.normalized * slideSlowdown);
+			return;
+		}
+		if ((Math.Abs(mag.x) > num2 && Math.Abs(x) < 0.05f) || (mag.x < 0f - num2 && x > 0f) || (mag.x > num2 && x < 0f))
+		{
+			rb.AddForce(moveSpeed * orientation.transform.right * Time.deltaTime * (0f - mag.x) * num);
+		}
+		if ((Math.Abs(mag.y) > num2 && Math.Abs(y) < 0.05f) || (mag.y < 0f - num2 && y > 0f) || (mag.y > num2 && y < 0f))
+		{
+			rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * (0f - mag.y) * num);
+		}
+		if (Mathf.Sqrt(Mathf.Pow(rb.velocity.x, 2f) + Mathf.Pow(rb.velocity.z, 2f)) > walkSpeed)
+		{
+			float num3 = rb.velocity.y;
+			Vector3 vector = rb.velocity.normalized * walkSpeed;
+			rb.velocity = new Vector3(vector.x, num3, vector.z);
+		}
+	}
+
+	public void Explode()
+	{
+		exploded = true;
+		Invoke("StopExplosion", 0.1f);
+	}
+
+	private void StopExplosion()
+	{
+		exploded = false;
+	}
+
+	public Vector2 FindVelRelativeToLook()
+	{
+		float current = orientation.transform.eulerAngles.y;
+		float target = Mathf.Atan2(rb.velocity.x, rb.velocity.z) * 57.29578f;
+		float num = Mathf.DeltaAngle(current, target);
+		float num2 = 90f - num;
+		float magnitude = rb.velocity.magnitude;
+		return new Vector2(y: magnitude * Mathf.Cos(num * ((float)Math.PI / 180f)), x: magnitude * Mathf.Cos(num2 * ((float)Math.PI / 180f)));
+	}
+
+	private void FindWallRunRotation()
+	{
+		if (!wallRunning)
+		{
+			wallRunRotation = 0f;
+			return;
+		}
+		_ = new Vector3(0f, playerCam.transform.rotation.y, 0f).normalized;
+		new Vector3(0f, 0f, 1f);
+		float num = 0f;
+		float current = playerCam.transform.rotation.eulerAngles.y;
+		if (Math.Abs(wallNormalVector.x - 1f) < 0.1f)
+		{
+			num = 90f;
+		}
+		else if (Math.Abs(wallNormalVector.x - -1f) < 0.1f)
+		{
+			num = 270f;
+		}
+		else if (Math.Abs(wallNormalVector.z - 1f) < 0.1f)
+		{
+			num = 0f;
+		}
+		else if (Math.Abs(wallNormalVector.z - -1f) < 0.1f)
+		{
+			num = 180f;
+		}
+		num = Vector3.SignedAngle(new Vector3(0f, 0f, 1f), wallNormalVector, Vector3.up);
+		float num2 = Mathf.DeltaAngle(current, num);
+		wallRunRotation = (0f - num2 / 90f) * 15f;
+		if (!readyToWallrun)
+		{
+			return;
+		}
+		if ((Mathf.Abs(wallRunRotation) < 4f && y > 0f && Math.Abs(x) < 0.1f) || (Mathf.Abs(wallRunRotation) > 22f && y < 0f && Math.Abs(x) < 0.1f))
+		{
+			if (!cancelling)
+			{
+				cancelling = true;
+				CancelInvoke("CancelWallrun");
+				Invoke("CancelWallrun", 0.2f);
+			}
+		}
+		else
+		{
+			cancelling = false;
+			CancelInvoke("CancelWallrun");
+		}
+	}
+
+	private void CancelWallrun()
+	{
+		MonoBehaviour.print("cancelled");
+		Invoke("GetReadyToWallrun", 0.1f);
+		rb.AddForce(wallNormalVector * 600f);
+		readyToWallrun = false;
+		AudioManager.Instance.PlayLanding();
+	}
+
+	private void GetReadyToWallrun()
+	{
+		readyToWallrun = true;
+	}
+
+	private void WallRunning()
+	{
+		if (wallRunning)
+		{
+			rb.AddForce(-wallNormalVector * Time.deltaTime * moveSpeed);
+			rb.AddForce(Vector3.up * Time.deltaTime * rb.mass * 100f * wallRunGravity);
+		}
+	}
+
+	private bool IsFloor(Vector3 v)
+	{
+		return Vector3.Angle(Vector3.up, v) < maxSlopeAngle;
+	}
+
+	private bool IsSurf(Vector3 v)
+	{
+		float num = Vector3.Angle(Vector3.up, v);
+		if (num < 89f)
+		{
+			return num > maxSlopeAngle;
+		}
+		return false;
+	}
+
+	private bool IsWall(Vector3 v)
+	{
+		return Math.Abs(90f - Vector3.Angle(Vector3.up, v)) < 0.1f;
+	}
+
+	private bool IsRoof(Vector3 v)
+	{
+		return v.y == -1f;
+	}
+
+	private void StartWallRun(Vector3 normal)
+	{
+		if (!grounded && readyToWallrun)
+		{
+			wallNormalVector = normal;
+			float num = 20f;
+			if (!wallRunning)
+			{
+				rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+				rb.AddForce(Vector3.up * num, ForceMode.Impulse);
+			}
+			wallRunning = true;
+		}
+	}
+
+	private void OnCollisionEnter(Collision other)
+	{
+		if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+		{
+			KillEnemy(other);
+		}
+	}
+
+	private void OnCollisionExit(Collision other)
+	{
+	}
+
+	private void OnCollisionStay(Collision other)
+	{
+		int layer = other.gameObject.layer;
+		if ((int)whatIsGround != ((int)whatIsGround | (1 << layer)))
+		{
+			return;
+		}
+		for (int i = 0; i < other.contactCount; i++)
+		{
+			Vector3 normal = other.contacts[i].normal;
+			if (IsFloor(normal))
+			{
+				if (wallRunning)
+				{
+					wallRunning = false;
+				}
+				if (!grounded && crouching)
+				{
+					AudioManager.Instance.Play("StartSlide");
+					AudioManager.Instance.Play("Slide");
+				}
+				grounded = true;
+				normalVector = normal;
+				cancellingGrounded = false;
+				CancelInvoke("StopGrounded");
+			}
+			if (IsWall(normal) && layer == LayerMask.NameToLayer("Ground"))
+			{
+				if (!onWall)
+				{
+					AudioManager.Instance.Play("StartSlide");
+					AudioManager.Instance.Play("Slide");
+				}
+				StartWallRun(normal);
+				onWall = true;
+				cancellingWall = false;
+				CancelInvoke("StopWall");
+			}
+			if (IsSurf(normal))
+			{
+				surfing = true;
+				cancellingSurf = false;
+				CancelInvoke("StopSurf");
+			}
+			IsRoof(normal);
+		}
+		float num = 3f;
+		if (!cancellingGrounded)
+		{
+			cancellingGrounded = true;
+			Invoke("StopGrounded", Time.deltaTime * num);
+		}
+		if (!cancellingWall)
+		{
+			cancellingWall = true;
+			Invoke("StopWall", Time.deltaTime * num);
+		}
+		if (!cancellingSurf)
+		{
+			cancellingSurf = true;
+			Invoke("StopSurf", Time.deltaTime * num);
+		}
+	}
+
+	private void StopGrounded()
+	{
+		grounded = false;
+	}
+
+	private void StopWall()
+	{
+		onWall = false;
+		wallRunning = false;
+	}
+
+	private void StopSurf()
+	{
+		surfing = false;
+	}
+
+	private void KillEnemy(Collision other)
+	{
+		if ((grounded && !crouching) || rb.velocity.magnitude < 3f)
+		{
+			return;
+		}
+		Enemy enemy = (Enemy)other.transform.root.GetComponent(typeof(Enemy));
+		if ((bool)enemy && !enemy.IsDead())
+		{
+			UnityEngine.Object.Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
+			RagdollController ragdollController = (RagdollController)other.transform.root.GetComponent(typeof(RagdollController));
+			if (grounded && crouching)
+			{
+				ragdollController.MakeRagdoll(rb.velocity * 1.2f * 34f);
+			}
+			else
+			{
+				ragdollController.MakeRagdoll(rb.velocity.normalized * 250f);
+			}
+			rb.AddForce(rb.velocity.normalized * 2f, ForceMode.Impulse);
+			enemy.DropGun(rb.velocity.normalized * 2f);
+		}
+	}
+
+	public Vector3 GetVelocity()
+	{
+		return rb.velocity;
+	}
+
+	public float GetFallSpeed()
+	{
+		return rb.velocity.y;
+	}
+
+	public Vector3 GetGrapplePoint()
+	{
+		return detectWeapons.GetGrapplerPoint();
+	}
+
+	public Collider GetPlayerCollider()
+	{
+		return playerCollider;
+	}
+
+	public Transform GetPlayerCamTransform()
+	{
+		return playerCam.transform;
+	}
+
+	public Vector3 HitPoint()
+	{
+		RaycastHit[] array = Physics.RaycastAll(playerCam.transform.position, playerCam.transform.forward, (int) whatIsHittable);
+		if (array.Length < 1)
+		{
+			return playerCam.transform.position + playerCam.transform.forward * 100f;
+		}
+		if (array.Length > 1)
+		{
+			for (int i = 0; i < array.Length; i++)
+			{
+				if (array[i].transform.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+				{
+					return array[i].point;
+				}
+			}
+		}
+		return array[0].point;
+	}
+
+	public float GetRecoil()
+	{
+		return detectWeapons.GetRecoil();
+	}
+
+	public void KillPlayer()
+	{
+		if (!Game.Instance.done)
+		{
+			CameraShaker.Instance.ShakeOnce(3f * GameState.Instance.cameraShake, 2f, 0.1f, 0.6f);
+			Cursor.lockState = CursorLockMode.None;
+			Cursor.visible = true;
+			UIManger.Instance.DeadUI(b: true);
+			Timer.Instance.Stop();
+			dead = true;
+			rb.freezeRotation = false;
+			playerCollider.material = deadMat;
+			detectWeapons.Throw(Vector3.zero);
+			paused = false;
+			ResetSlowmo();
+		}
+	}
+
+	public void Respawn()
+	{
+		detectWeapons.StopUse();
+	}
+
+	public void Slowmo(float timescale, float length)
+	{
+		if (GameState.Instance.slowmo)
+		{
+			CancelInvoke("Slowmo");
+			desiredTimeScale = timescale;
+			Invoke("ResetSlowmo", length);
+			AudioManager.Instance.Play("SlowmoStart");
+		}
+	}
+
+	private void ResetSlowmo()
+	{
+		desiredTimeScale = 1f;
+		AudioManager.Instance.Play("SlowmoEnd");
+	}
+
+	public bool IsCrouching()
+	{
+		return crouching;
+	}
+
+	public bool HasGun()
+	{
+		return detectWeapons.HasGun();
+	}
+
+	public bool IsDead()
+	{
+		return dead;
+	}
+
+	public Rigidbody GetRb()
+	{
+		return rb;
+	}
+
+	private void UpdateActionMeter()
+	{
+		float target = 0.09f;
+		if (rb.velocity.magnitude > 15f && (!dead || !Game.Instance.playing))
+		{
+			target = 1f;
+		}
+		actionMeter = Mathf.SmoothDamp(actionMeter, target, ref vel, 0.7f);
+	}
+
+	public float GetActionMeter()
+	{
+		return actionMeter * 22000f;
+	}
 }

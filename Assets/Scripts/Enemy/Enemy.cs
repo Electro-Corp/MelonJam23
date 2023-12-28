@@ -14,7 +14,7 @@ public class Enemy : MonoBehaviour
     public float MAXHEALTH = 100;
     public float health = 100;
 
-   
+    public bool isDead;
 
     public string targetToKill;
 
@@ -124,5 +124,14 @@ public class Enemy : MonoBehaviour
         transform.Find("GUN").transform.GetComponent<Rigidbody>().isKinematic = false;
         transform.Find("GUN").transform.parent = null;
         transform.GetComponent<Enemy>().enabled = false;
+        isDead = true;
+    }
+
+    public void DropGun(Vector3 velocity) {
+        // TODO: Make do thing
+    }
+
+    public bool IsDead() {
+        return isDead;
     }
 }

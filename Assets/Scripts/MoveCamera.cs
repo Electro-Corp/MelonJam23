@@ -1,10 +1,30 @@
 using UnityEngine;
 
-public class MoveCamera : MonoBehaviour {
+public class MoveCamera : MonoBehaviour
+{
+	public Transform player;
 
-    public Transform player;
+	private Vector3 offset;
 
-    void Update() {
-        transform.position = player.transform.position;
-    }
+	private Camera cam;
+
+	public static MoveCamera Instance { get; private set; }
+
+	private void Start()
+	{
+		Instance = this;
+		cam = transform.GetChild(0).GetComponent<Camera>();
+		cam.fieldOfView = GameState.Instance.fov;
+		offset = transform.position - player.transform.position;
+	}
+
+	private void Update()
+	{
+		transform.position = player.transform.position;
+	}
+
+	public void UpdateFov()
+	{
+		cam.fieldOfView = GameState.Instance.fov;
+	}
 }
