@@ -14,8 +14,48 @@ public class GenerateWorld : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        
         // Pick random starting prefab
-        GameObject startPrefab = prefabs[Random.RandomRange(0, prefabs.Count)];
+        GameObject startPrefab = Instantiate(prefabs[Random.Range(0, prefabs.Count)]);
+
+        List<Transform> doors = new List<Transform>();
+
+        // Find location of door
+        foreach(Transform transform in startPrefab.transform)
+        {
+            if (transform.tag.Equals("DOOR"))
+            {
+                doors.Add(transform);
+            }
+        }
+        
+        foreach(Transform door in doors)
+        {
+            // Get a random room for each door
+            GameObject connectingRoom = Instantiate(prefabs[Random.Range(0, prefabs.Count)]);
+            Transform connectingDoor = null;
+            foreach (Transform transform in connectingRoom.transform)
+            {
+                if (transform.tag.Equals("DOOR"))
+                {
+                    // Get the first door we find
+                    connectingDoor = transform;
+                    break;
+                }
+            }
+
+            // Connect them. Now. 
+           
+            // First, align them so they face the same direction
+            connectingRoom.transform.rotation = door.rotation * Quaternion.AngleAxis(180, Vector3.up);
+
+            // Now the hard part, move the doors onto each other
+            connectingDoor.parent = null;
+            connectingRoom.transform.parent = connectingDoor;
+            connectingDoor.position = door.position;
+
+
+        }
 
         
     }
