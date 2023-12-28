@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Cover
   - DOOR
+  - LocGen
   layers:
   - Default
   - TransparentFX
