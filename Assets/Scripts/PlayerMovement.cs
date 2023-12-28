@@ -1,55 +1,81 @@
 // Some stupid rigidbody based movement by Dani
 
 using System;
+using UnityEditor;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour {
 
     //Assingables
+    [Header("Assingables")]
     public Transform playerCam;
     public Transform orientation;
     
     //Other
+    [Header("Other")]
     private Rigidbody rb;
 
     //Rotation and look
+    [Header("Rotation and Look")]
     private float xRotation;
     private float sensitivity = 50f;
     private float sensMultiplier = 1f;
     
     //Movement
+    [Header("Movement")]
     public float moveSpeed = 4500;
     public float maxSpeed = 20;
     public bool grounded;
     public LayerMask whatIsGround;
 
     
+    [Header("Counter Movement and other stuff idrk")]
     public float counterMovement = 0.175f;
     private float threshold = 0.01f;
     public float maxSlopeAngle = 35f;
 
     //Crouch & Slide
+    [Header("Crouching and Sliding")]
     private Vector3 crouchScale = new Vector3(1, 0.5f, 1);
     private Vector3 playerScale;
     public float slideForce = 400;
     public float slideCounterMovement = 0.2f;
 
     //Jumping
+    [Header("Jumping")]
     private bool readyToJump = true;
     private float jumpCooldown = 0.25f;
     public float jumpForce = 550f;
 
     //Bounce 
-    public float bounceForce = 550f;
+    [Header("Bounce")]
+    public float bounceForce = 300f;
     public LayerMask whatIsBounce;
 
     //Input
+    [Header("Input")]
     float x, y;
     bool jumping, sprinting, crouching;
     
     //Sliding
+    [Header("Slding")]
     private Vector3 normalVector = Vector3.up;
     private Vector3 wallNormalVector;
+
+    [Header("Wall Stuff")]
+    public bool walled;
+    public float wallCheckDistance = .02f;
+    private bool wallLeft;
+    private bool wallRight;
+    private RaycastHit leftWallhit;
+    private RaycastHit rightWallhit;
+    public float wallJumpMulitplierVertical = .2f;
+    public float wallJumpMulitplierHorizontal = .75f;
+    public Vector2 wallJumpPower = new Vector2(8f, 12f);
+    private float wallJumpingDirection;
+
+    // Other stuff
+    private int collisionCount = 0;
 
     void Awake() {
         rb = GetComponent<Rigidbody>();
@@ -64,6 +90,7 @@ public class PlayerMovement : MonoBehaviour {
     
     private void FixedUpdate() {
         Movement();
+        SetGravity();
     }
 
     private void Update() {
@@ -132,7 +159,7 @@ public class PlayerMovement : MonoBehaviour {
         if (y < 0 && yMag < -maxSpeed) y = 0;
 
         //Some multipliers
-        float multiplier = 1f, multiplierV = 1f;
+        float multiplier = .75f, multiplierV = .75f;
         
         // Movement in air
         if (!grounded) {
@@ -142,6 +169,8 @@ public class PlayerMovement : MonoBehaviour {
         
         // Movement while sliding
         if (grounded && crouching) multiplierV = 0f;
+
+        if (walled) multiplier = 0f;
 
         //Apply forces to move player
         rb.AddForce(orientation.transform.forward * y * moveSpeed * Time.deltaTime * multiplier * multiplierV);
@@ -163,6 +192,35 @@ public class PlayerMovement : MonoBehaviour {
             else if (rb.velocity.y > 0) 
                 rb.velocity = new Vector3(vel.x, vel.y / 2, vel.z);
             
+            Invoke(nameof(ResetJump), jumpCooldown);
+        }
+
+        if(walled && readyToJump) {
+            readyToJump = false;
+            walled = false; 
+            
+            // rb.AddForce(Vector2.up * jumpForce * wallJumpMulitplierVertical);
+            /* if(wallRight)
+            {
+                rb.AddForce(-rightWallhit.normal * jumpForce * .5f);
+            } else {
+                rb.AddForce(-leftWallhit.normal * jumpForce * .5f);
+            } */
+            
+            wallJumpingDirection = -transform.localScale.x;
+            // This line is funny
+            // rb.velocity = new Vector2(wallJumpingDirection * jumpForce * .75f, wallJumpMulitplierHorizontal * wallJumpMulitplierVertical);
+
+            rb.velocity = new Vector3(wallJumpingDirection * wallJumpPower.x, wallJumpPower.y, rb.velocity.z);
+            
+            /*if (transform.localScale.x != wallJumpingDirection)
+            {
+                // isFacingRight = !isFacingRight;
+                Vector3 localScale = transform.localScale;
+                localScale.x *= -1f;
+                transform.localScale = localScale;
+            }*/
+
             Invoke(nameof(ResetJump), jumpCooldown);
         }
     }
@@ -214,11 +272,7 @@ public class PlayerMovement : MonoBehaviour {
         }
     }
 
-    /// <summary>
-    /// Find the velocity relative to where the player is looking
-    /// Useful for vectors calculations regarding movement and limiting movement
-    /// </summary>
-    /// <returns></returns>
+
     public Vector2 FindVelRelativeToLook() {
         float lookAngle = orientation.transform.eulerAngles.y;
         float moveAngle = Mathf.Atan2(rb.velocity.x, rb.velocity.z) * Mathf.Rad2Deg;
@@ -255,10 +309,7 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     private bool cancellingGrounded;
-    
-    /// <summary>
-    /// Handle ground detection
-    /// </summary>
+
     private void OnCollisionStay(Collision other) {
         //Make sure we are only checking for walkable layers
         int collided_layer = other.gameObject.layer;
@@ -277,6 +328,8 @@ public class PlayerMovement : MonoBehaviour {
             Debug.Log("Not Bounce");
         }
 
+        
+
         Debug.Log("Grounded");
         //Iterate through every collision in a physics update
         for (int i = 0; i < other.contactCount; i++) {
@@ -285,15 +338,22 @@ public class PlayerMovement : MonoBehaviour {
             //FLOOR
             if (IsFloor(normal, (int) Mathf.Log(collided_layer, 2)) == 0) {
                 grounded = true;
+                walled = false;
+                rb.useGravity = true;
                 cancellingGrounded = false;
                 normalVector = normal;
                 CancelInvoke(nameof(StopGrounded));
             } else if (IsFloor(normal, (int) Mathf.Log(collided_layer, 2)) == 1) {
                 applyBounce();
+                walled = false;
+                rb.useGravity = true;
+            } else if (IsFloor(normal, (int) Mathf.Log(collided_layer, 2)) == 2) {
+                IsWalled();
+                wallRight = Physics.Raycast(transform.position, orientation.right, out rightWallhit, wallCheckDistance);
+                wallLeft = Physics.Raycast(transform.position, -orientation.right, out leftWallhit, wallCheckDistance);
             }
         }
 
-        //Invoke ground/wall cancel, since we can't check normals with CollisionExit
         float delay = 3f;
         if (!cancellingGrounded) {
             cancellingGrounded = true;
@@ -301,8 +361,78 @@ public class PlayerMovement : MonoBehaviour {
         }
     }
 
+    private void OnCollisionEnter() {
+        collisionCount ++;
+    }
+
+    private void OnCollisionExit() {
+        collisionCount --;
+    }
+
     private void StopGrounded() {
         grounded = false;
     }
     
+    private void IsWalled() {
+        // Fail Conditions
+        if (grounded) { 
+            walled = false;
+            rb.useGravity = true;
+            return;
+        }
+
+        walled = true;
+
+        rb.useGravity = false;
+
+        Vector3 wallNormal;
+        if(wallRight) {
+            wallNormal = rightWallhit.normal;
+        } else {
+            wallNormal = leftWallhit.normal;
+        }
+
+        Vector3 wallForward = Vector3.Cross(wallNormal, transform.up);
+
+        if((orientation.forward - wallForward).magnitude > (orientation.forward + wallForward).magnitude) 
+        {
+            wallForward= -wallForward;
+        }
+
+        rb.AddForce(wallForward/* * wallRunForce*/, ForceMode.Force);
+
+        // FOrce towards wal
+        if (!(wallLeft && x > 0) && !(wallRight && x < 0))
+        {
+            rb.AddForce(-wallNormal * 500, ForceMode.Force);
+        }
+
+        // forc e down
+        rb.AddForce(new Vector3(0f, -6, 0f), ForceMode.Force);
+    }
+
+    private bool PressingMovementButtonForWallSlide() {
+        if(Input.GetAxisRaw("Horizontal") > 0) {
+            return true;
+        }
+
+        if(Input.GetAxisRaw("Vertical") != 0) {
+            return true;
+        }
+        return false;
+    }
+
+    private void WallJump() {
+        walled = false;
+    }
+
+    private void SetGravity() {
+        if (collisionCount == 0) {
+            rb.useGravity = true;
+            walled = false;
+        }
+
+        
+    }
+
 }
