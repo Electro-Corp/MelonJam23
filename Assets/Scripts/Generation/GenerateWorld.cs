@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Networking.PlayerConnection;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 /*
  * Big boi class, it generates the worlds
@@ -33,6 +35,10 @@ public class GenerateWorld : MonoBehaviour
         {
             // Get a random room for each door
             GameObject connectingRoom = Instantiate(prefabs[Random.Range(0, prefabs.Count)]);
+            // Make sure its not the same as the og
+            while(connectingRoom.Equals(startPrefab)) {
+                connectingRoom = Instantiate(prefabs[Random.Range(0, prefabs.Count)]);
+            }
             Transform connectingDoor = null;
             foreach (Transform transform in connectingRoom.transform)
             {
@@ -45,15 +51,29 @@ public class GenerateWorld : MonoBehaviour
             }
 
             // Connect them. Now. 
+
+            // First, align the room and the door so they face opposite directions
+            
+
            
-            // First, align them so they face the same direction
-            connectingRoom.transform.rotation = door.rotation * Quaternion.AngleAxis(180, Vector3.up);
+            //connectingRoom.transform.rotation *= Quaternion.AngleAxis(180, Vector3.up);
+
+            //connectingRoom.transform.rotation = Quaternion.LookRotation(-door.rotation.eulerAngles);
+
 
             // Now the hard part, move the doors onto each other
             connectingDoor.parent = null;
             connectingRoom.transform.parent = connectingDoor;
-            connectingDoor.position = door.position;
+            //connectingDoor.transform.rotation = door.rotation * Quaternion.AngleAxis(180, Vector3.up);
+            Debug.Log("Original Rotation for " + connectingDoor.name + " was: " + connectingDoor.transform.rotation.eulerAngles);
+            Vector3 doorRot = (door.rotation.eulerAngles);
+            doorRot.y -= 180;
 
+            connectingDoor.transform.rotation = Quaternion.Euler(doorRot);// * Quaternion.Euler(0, 180, 0);
+            Debug.Log("New Rotation for " + connectingDoor.name + " is: " + connectingDoor.transform.rotation.eulerAngles);
+            Debug.Log("The door's Rotation for " + door.name + " was: " + door.rotation.eulerAngles);
+            Debug.Log("======");
+            connectingDoor.position = door.position;
 
         }
 
