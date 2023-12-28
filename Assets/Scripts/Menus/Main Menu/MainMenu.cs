@@ -3,14 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+
 public class MainMenu : MonoBehaviour
 {
     public Slider loading;
-    public GameObject ld;
+    public GameObject loadingContainer;
+    public GameObject menu;
     public void PlayGame()
     {
         // in the future it will contiune from saved game
-        ld.SetActive(true);
+        // Rogue like so no saving, except for like settings
+        loadingContainer.SetActive(true);
+        menu.SetActive(false);
         StartCoroutine(LoadSceneManProg());
     }
 
