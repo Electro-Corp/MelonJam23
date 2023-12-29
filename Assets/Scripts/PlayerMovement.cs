@@ -376,8 +376,6 @@ public class PlayerMovement : MonoBehaviour
 
 	private void StopGrab()
 	{
-		UnityEngine.Object.Destroy(grabJoint);
-		UnityEngine.Object.Destroy(grabLr);
 		objectGrabbing.angularDrag = 0.05f;
 		objectGrabbing.drag = 0f;
 		objectGrabbing = null;
@@ -391,8 +389,6 @@ public class PlayerMovement : MonoBehaviour
 		if (rb.velocity.magnitude > 0.1f && grounded)
 		{
 			rb.AddForce(orientation.transform.forward * num);
-			AudioManager.Instance.Play("StartSlide");
-			AudioManager.Instance.Play("Slide");
 		}
 	}
 
@@ -446,7 +442,6 @@ public class PlayerMovement : MonoBehaviour
 			distance += num2;
 			if (distance > 300f / num)
 			{
-				AudioManager.Instance.PlayFootStep();
 				distance = 0f;
 			}
 		}
@@ -517,28 +512,11 @@ public class PlayerMovement : MonoBehaviour
 		}
 		rb.AddForce(orientation.transform.forward * y * moveSpeed * Time.deltaTime * num4 * num5);
 		rb.AddForce(orientation.transform.right * x * moveSpeed * Time.deltaTime * num4);
-		SpeedLines();
-	}
-
-	private void SpeedLines()
-	{
-		float num = Vector3.Angle(rb.velocity, playerCam.transform.forward) * 0.15f;
-		if (num < 1f)
-		{
-			num = 1f;
-		}
-		float rateOverTimeMultiplier = rb.velocity.magnitude / num;
-		if (grounded && !wallRunning)
-		{
-			rateOverTimeMultiplier = 0f;
-		}
-		psEmission.rateOverTimeMultiplier = rateOverTimeMultiplier;
 	}
 
 	private void CameraShake()
 	{
 		float num = rb.velocity.magnitude / 9f;
-		CameraShaker.Instance.ShakeOnce(num, 0.1f * num, 0.25f, 0.2f);
 		Invoke("CameraShake", 0.2f);
 	}
 
@@ -573,7 +551,6 @@ public class PlayerMovement : MonoBehaviour
 			{
 				wallRunning = false;
 			}
-			AudioManager.Instance.PlayJump();
 		}
 	}
 
@@ -696,7 +673,7 @@ public class PlayerMovement : MonoBehaviour
 		Invoke("GetReadyToWallrun", 0.1f);
 		rb.AddForce(wallNormalVector * 600f);
 		readyToWallrun = false;
-		AudioManager.Instance.PlayLanding();
+		// Land Audio
 	}
 
 	private void GetReadyToWallrun()
@@ -768,8 +745,9 @@ public class PlayerMovement : MonoBehaviour
 	private void OnCollisionStay(Collision other)
 	{
 		int layer = other.gameObject.layer;
-		if ((int)whatIsGround != ((int)whatIsGround | (1 << layer)))
+		if ((int) whatIsGround != ((int) whatIsGround | (1 << layer)))
 		{
+			Debug.Log("Ground is not ground");
 			return;
 		}
 		for (int i = 0; i < other.contactCount; i++)
@@ -783,8 +761,7 @@ public class PlayerMovement : MonoBehaviour
 				}
 				if (!grounded && crouching)
 				{
-					AudioManager.Instance.Play("StartSlide");
-					AudioManager.Instance.Play("Slide");
+					// Slide Audio
 				}
 				grounded = true;
 				normalVector = normal;
@@ -795,8 +772,7 @@ public class PlayerMovement : MonoBehaviour
 			{
 				if (!onWall)
 				{
-					AudioManager.Instance.Play("StartSlide");
-					AudioManager.Instance.Play("Slide");
+					// Slide Audio
 				}
 				StartWallRun(normal);
 				onWall = true;
@@ -854,7 +830,7 @@ public class PlayerMovement : MonoBehaviour
 		Enemy enemy = (Enemy)other.transform.root.GetComponent(typeof(Enemy));
 		if ((bool)enemy && !enemy.IsDead())
 		{
-			UnityEngine.Object.Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
+			Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
 			RagdollController ragdollController = (RagdollController)other.transform.root.GetComponent(typeof(RagdollController));
 			if (grounded && crouching)
 			{
@@ -923,7 +899,6 @@ public class PlayerMovement : MonoBehaviour
 	{
 		if (!Game.Instance.done)
 		{
-			CameraShaker.Instance.ShakeOnce(3f * GameState.Instance.cameraShake, 2f, 0.1f, 0.6f);
 			Cursor.lockState = CursorLockMode.None;
 			Cursor.visible = true;
 			UIManger.Instance.DeadUI(b: true);
@@ -949,14 +924,12 @@ public class PlayerMovement : MonoBehaviour
 			CancelInvoke("Slowmo");
 			desiredTimeScale = timescale;
 			Invoke("ResetSlowmo", length);
-			AudioManager.Instance.Play("SlowmoStart");
 		}
 	}
 
 	private void ResetSlowmo()
 	{
 		desiredTimeScale = 1f;
-		AudioManager.Instance.Play("SlowmoEnd");
 	}
 
 	public bool IsCrouching()

@@ -46,18 +46,6 @@ public class GameState : MonoBehaviour
 		ppVolume.SetActive(b);
 	}
 
-	public void SetBlur(bool b)
-	{
-		blur = b;
-		if (b)
-		{
-			ppBlur.shutterAngle.value = 160f;
-		}
-		else
-		{
-			ppBlur.shutterAngle.value = 0f;
-		}
-	}
 
 	public void SetShake(bool b)
 	{
@@ -102,14 +90,12 @@ public class GameState : MonoBehaviour
 
 	public void SetMuted(bool b)
 	{
-		AudioManager.Instance.MuteSounds(b);
 		muted = b;
 	}
 
 	private void UpdateSettings()
 	{
 		SetGraphics(graphics);
-		SetBlur(blur);
 		SetSensitivity(sensitivity);
 		SetVolume(volume);
 		SetFov(fov);

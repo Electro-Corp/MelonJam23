@@ -44,10 +44,10 @@ public class RagdollController : MonoBehaviour
 	{
 		if (!isRagdoll)
 		{
-			UnityEngine.Object.Destroy(GetComponent<NavMeshAgent>());
-			UnityEngine.Object.Destroy(GetComponent("NavTest"));
+			Destroy(GetComponent<NavMeshAgent>());
+			Destroy(GetComponent("NavTest"));
 			isRagdoll = true;
-			UnityEngine.Object.Destroy(GetComponent<Rigidbody>());
+			Destroy(GetComponent<Rigidbody>());
 			GetComponentInChildren<Animator>().enabled = false;
 			for (int i = 0; i < limbs.Length; i++)
 			{
@@ -124,13 +124,13 @@ public class RagdollController : MonoBehaviour
 				axis[j] = c[j].axis;
 				anchor[j] = c[j].anchor;
 				swingAxis[j] = c[j].swingAxis;
-				UnityEngine.Object.Destroy(c[j]);
+				Destroy(c[j]);
 			}
 		}
 		Rigidbody[] array2 = array;
 		for (int k = 0; k < array2.Length; k++)
 		{
-			UnityEngine.Object.Destroy(array2[k]);
+			Destroy(array2[k]);
 		}
 	}
 

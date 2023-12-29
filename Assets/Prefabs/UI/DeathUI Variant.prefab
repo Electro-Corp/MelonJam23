@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: DeathUI Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 1908749639361043956, guid: d291d9b2d719c634c9bde61e52337cb9, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2842422128692434742, guid: d291d9b2d719c634c9bde61e52337cb9, type: 3}
       propertyPath: m_Pivot.x
       value: 0

@@ -75,7 +75,6 @@ public class Grappler : Pickup
 		endPoint = tip.position;
 		offsetMultiplier = 2f;
 		lr.positionCount = positions;
-		AudioManager.Instance.PlayPitched("Grapple", 0.2f);
 	}
 
 	public override void OnAim()

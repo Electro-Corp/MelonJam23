@@ -13,7 +13,7 @@ public class MoveCamera : MonoBehaviour
 	private void Start()
 	{
 		Instance = this;
-		cam = transform.GetChild(0).GetComponent<Camera>();
+		cam = transform.GetComponentInParent<Camera>();
 		cam.fieldOfView = GameState.Instance.fov;
 		offset = transform.position - player.transform.position;
 	}
