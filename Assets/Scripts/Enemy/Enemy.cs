@@ -117,7 +117,7 @@ public class Enemy : MonoBehaviour
         return near;
     }
 
-    void Die()
+    public void Die()
     {
         this.agent.enabled = false;
         transform.GetComponent<Rigidbody>().AddForce(transform.forward * 100);
