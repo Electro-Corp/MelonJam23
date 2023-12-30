@@ -9,6 +9,14 @@ public class MainMenu : MonoBehaviour
     public Slider loading;
     public GameObject loadingContainer;
     public GameObject menu;
+
+    public GameObject storyLoc;
+
+    public void Story()
+    {
+        storyLoc.SetActive(true);
+    }
+
     public void PlayGame()
     {
         // in the future it will contiune from saved game
