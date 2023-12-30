@@ -71,9 +71,10 @@ GameObject:
   - component: {fileID: 4344013238333566196}
   - component: {fileID: 2632984283218673163}
   - component: {fileID: 1196350811486258322}
+  - component: {fileID: 7527493870269215469}
   m_Layer: 0
   m_Name: ENEMy
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -224,6 +225,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 100
   last: {fileID: 0}
+--- !u!114 &7527493870269215469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2693779552525822437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e7bae0519ea71649828f66d5fa7b3cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hips: {fileID: 0}
+  limbs: []
+  leftArm: {fileID: 0}
+  rightArm: {fileID: 0}
+  head: {fileID: 0}
+  hand: {fileID: 0}
+  hand2: {fileID: 0}
 --- !u!1 &2791383376993348974
 GameObject:
   m_ObjectHideFlags: 0

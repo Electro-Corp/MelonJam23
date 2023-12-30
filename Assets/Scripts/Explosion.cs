@@ -8,7 +8,7 @@ public class Explosion : MonoBehaviour
 
 	private void Start()
 	{
-		float num = Vector3.Distance(base.transform.position, PlayerMovement.Instance.gameObject.transform.position);
+		float num = Vector3.Distance(transform.position, PlayerMovement.Instance.gameObject.transform.position);
 		MonoBehaviour.print(num);
 		float num2 = 10f / num;
 		if (num2 < 0.1f)
@@ -21,14 +21,14 @@ public class Explosion : MonoBehaviour
 	private void OnTriggerEnter(Collider other)
 	{
 		int layer = other.gameObject.layer;
-		Vector3 normalized = (other.transform.position - base.transform.position).normalized;
-		float num = Vector3.Distance(other.transform.position, base.transform.position);
+		Vector3 normalized = (other.transform.position - transform.position).normalized;
+		float num = Vector3.Distance(other.transform.position, transform.position);
 		if (other.gameObject.CompareTag("Enemy"))
 		{
-			if (other.gameObject.name != "Torso")
-			{
-				return;
-			}
+			// if (other.gameObject.name != "Torso")
+			// {
+			// 	return;
+			// }
 			RagdollController ragdollController = (RagdollController)other.transform.root.GetComponent(typeof(RagdollController));
 			if ((bool)ragdollController && !ragdollController.IsRagdoll())
 			{

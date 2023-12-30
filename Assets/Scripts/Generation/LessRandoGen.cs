@@ -25,6 +25,7 @@ public class LessRandoGen : MonoBehaviour
 
         GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
         pSa.transform.parent = null;
+        pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
         //pSa.transform.position = new Vector3(pSa.transform.position.x, transformBoi.position.y + 100, pSa.transform.position.z);
         cam.GetComponent<MoveCamera>().player = pSa.transform;
        

@@ -41,7 +41,7 @@ public class Bullet : MonoBehaviour
 			return;
 		}
 		BulletExplosion(other.contacts[0]);
-		Instantiate(PrefabManager.Instance.bulletHitAudio, other.contacts[0].point, Quaternion.identity);
+		// Instantiate(PrefabManager.Instance.bulletHitAudio, other.contacts[0].point, Quaternion.identity);
 		int layer = other.gameObject.layer;
 		if (layer == LayerMask.NameToLayer("Player"))
 		{
@@ -51,19 +51,24 @@ public class Bullet : MonoBehaviour
 		}
 		if (layer == LayerMask.NameToLayer("Enemy"))
 		{
+			((Enemy)other.transform.root.GetComponent(typeof(Enemy))).health -= this.damage;
 			if (col == Color.blue)
 			{
-				AudioManager.Instance.Play("Hitmarker");
+				// AudioManager.Instance.Play("Hitmarker");
 				MonoBehaviour.print("HITMARKER");
 			}
-			Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
-			((RagdollController)other.transform.root.GetComponent(typeof(RagdollController))).MakeRagdoll(-transform.right * 350f);
-			if ((bool)other.gameObject.GetComponent<Rigidbody>())
-			{
-				other.gameObject.GetComponent<Rigidbody>().AddForce(-transform.right * 1500f);
+			// Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
+			// ((RagdollController)other.transform.root.GetComponent(typeof(RagdollController))).MakeRagdoll(-transform.right * 350f);
+			
+			
+			if(((Enemy)other.transform.root.GetComponent(typeof(Enemy))).health < 1) {
+				if ((bool)other.gameObject.GetComponent<Rigidbody>()) {
+					other.gameObject.GetComponent<Rigidbody>().AddForce(-transform.right * 1500f);
+				}
+				((Enemy)other.transform.root.GetComponent(typeof(Enemy))).DropGun(Vector3.up);
+				Destroy(gameObject);
 			}
-			((Enemy)other.transform.root.GetComponent(typeof(Enemy))).DropGun(Vector3.up);
-			Destroy(gameObject);
+			
 			return;
 		}
 		if (layer == LayerMask.NameToLayer("Bullet"))
@@ -96,9 +101,9 @@ public class Bullet : MonoBehaviour
 	{
 		Vector3 point = contact.point;
 		Vector3 normal = contact.normal;
-		ParticleSystem component = Instantiate(PrefabManager.Instance.bulletDestroy, point + normal * 0.05f, Quaternion.identity).GetComponent<ParticleSystem>();
-		component.transform.rotation = Quaternion.LookRotation(normal);
-		component.startColor = Color.blue;
+		// ParticleSystem component = Instantiate(PrefabManager.Instance.bulletDestroy, point + normal * 0.05f, Quaternion.identity).GetComponent<ParticleSystem>();
+		// component.transform.rotation = Quaternion.LookRotation(normal);
+		// component.startColor = Color.blue;
 	}
 
 	public void SetBullet(float damage, float push, Color col)
