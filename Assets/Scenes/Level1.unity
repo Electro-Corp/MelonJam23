@@ -166,7 +166,7 @@ GameObject:
   - component: {fileID: 187349950}
   - component: {fileID: 187349949}
   - component: {fileID: 187349948}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GrappleBox (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -296,6 +296,7 @@ MonoBehaviour:
   player: {fileID: 1831077131688169543, guid: 38ffea82698e4904d8666dfe0f6de04f, type: 3}
   cam: {fileID: 1288181847}
   spawnLoc: {fileID: 110092783}
+  grapGun: {fileID: 8837144404255931759, guid: 37e52cd56eb8281408d916aef0efb7b4, type: 3}
 --- !u!4 &303517643
 Transform:
   m_ObjectHideFlags: 0
@@ -339,7 +340,7 @@ Transform:
   m_GameObject: {fileID: 340751532}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 97.4, y: -57.4, z: 119.4}
+  m_LocalPosition: {x: 97.4, y: -53.1, z: 119.4}
   m_LocalScale: {x: 27.511673, y: 16.898077, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -549,7 +550,7 @@ Transform:
   m_GameObject: {fileID: 694683267}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.4, y: -25, z: 116.7}
+  m_LocalPosition: {x: 11.4, y: -33.3, z: 116.7}
   m_LocalScale: {x: 32, y: 32, z: 32}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -638,7 +639,7 @@ GameObject:
   - component: {fileID: 819020966}
   - component: {fileID: 819020965}
   - component: {fileID: 819020964}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GrappleBox (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -743,7 +744,7 @@ GameObject:
   - component: {fileID: 830714425}
   - component: {fileID: 830714424}
   - component: {fileID: 830714423}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GrappleBox (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -864,7 +865,7 @@ Transform:
   m_GameObject: {fileID: 940742364}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 10, y: -0.1, z: 210.3}
+  m_LocalPosition: {x: 10, y: -12.4, z: 210.3}
   m_LocalScale: {x: 32, y: 32, z: 32}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1008,7 +1009,7 @@ Transform:
   m_GameObject: {fileID: 1187701809}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 76.9, y: -61.96, z: 103.04}
+  m_LocalPosition: {x: 76.9, y: -57.31, z: 104.38}
   m_LocalScale: {x: 27.511673, y: 16.898077, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1097,7 +1098,7 @@ GameObject:
   - component: {fileID: 1254834915}
   - component: {fileID: 1254834914}
   - component: {fileID: 1254834913}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GrappleBox (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1113,7 +1114,7 @@ Transform:
   m_GameObject: {fileID: 1254834911}
   serializedVersion: 2
   m_LocalRotation: {x: -0.25791633, y: -0, z: -0, w: 0.96616733}
-  m_LocalPosition: {x: -23.599998, y: -38.1, z: 247.7}
+  m_LocalPosition: {x: -23.599998, y: -51.8, z: 247.7}
   m_LocalScale: {x: 28.697357, y: 3.1584265, z: 66.299644}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1499,7 +1500,7 @@ GameObject:
   - component: {fileID: 1763516959}
   - component: {fileID: 1763516958}
   - component: {fileID: 1763516957}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GrappleBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1620,7 +1621,7 @@ Transform:
   m_GameObject: {fileID: 1846252070}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 64.3442, y: -69.8237, z: 117.1}
+  m_LocalPosition: {x: 64.3442, y: -62.37, z: 115.49}
   m_LocalScale: {x: 27.511673, y: 16.898077, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1725,7 +1726,7 @@ Transform:
   m_GameObject: {fileID: 2008021254}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 163.9, y: -44.5, z: 25.3}
+  m_LocalPosition: {x: 163.9, y: -33.3, z: 25.3}
   m_LocalScale: {x: 32, y: 32, z: 32}
   m_ConstrainProportionsScale: 0
   m_Children: []

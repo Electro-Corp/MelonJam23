@@ -19,13 +19,17 @@ public class LessRandoGen : MonoBehaviour
     public GameObject player;
     public GameObject cam;
     public GameObject spawnLoc;
+    public GameObject grapGun;
     
     // Start is called before the first frame update
     void Start()
     {
 
         GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
+        GameObject grap = Instantiate(grapGun, pSa.transform.position, pSa.transform.rotation);
         pSa.transform.parent = null;
+        grap.transform.parent = cam.transform;
+        
         pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
         cam.GetComponent<MoveCamera>().player = pSa.transform;
         
@@ -43,11 +47,12 @@ public class LessRandoGen : MonoBehaviour
             }
             i++;
         }
+        grap.transform.position = cam.transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+       
     }
 }
