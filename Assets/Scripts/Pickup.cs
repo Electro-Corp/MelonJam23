@@ -10,7 +10,7 @@ public abstract class Pickup : MonoBehaviour, IPickup
 
 	public float recoil;
 
-	private Transform outline;
+	// private Transform outline;
 
 	public bool pickedUp { get; set; }
 
@@ -19,7 +19,7 @@ public abstract class Pickup : MonoBehaviour, IPickup
 	private void Awake()
 	{
 		readyToUse = true;
-		outline = transform.GetChild(1);
+		// outline = transform.GetChild(1);
 	}
 
 	private void Update()
@@ -31,7 +31,7 @@ public abstract class Pickup : MonoBehaviour, IPickup
 	{
 		pickedUp = true;
 		this.player = player;
-		outline.gameObject.SetActive(value: false);
+		// outline.gameObject.SetActive(value: false);
 	}
 
 	public void Drop()
@@ -45,7 +45,7 @@ public abstract class Pickup : MonoBehaviour, IPickup
 	{
 		CancelInvoke();
 		pickedUp = false;
-		outline.gameObject.SetActive(value: true);
+		// outline.gameObject.SetActive(value: true);
 	}
 
 	public abstract void Use(Vector3 attackDirection);
@@ -67,7 +67,7 @@ public abstract class Pickup : MonoBehaviour, IPickup
 		}
 		if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
 		{
-			UnityEngine.Object.Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
+			// Instantiate(PrefabManager.Instance.enemyHitAudio, other.contacts[0].point, Quaternion.identity);
 			((RagdollController)other.transform.root.GetComponent(typeof(RagdollController))).MakeRagdoll(-transform.right * 60f);
 			Rigidbody component = other.gameObject.GetComponent<Rigidbody>();
 			if ((bool)component)
