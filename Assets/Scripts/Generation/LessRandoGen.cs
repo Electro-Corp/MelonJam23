@@ -15,21 +15,20 @@ public class LessRandoGen : MonoBehaviour
     [Header("Root")]
     public GameObject root;
 
-    /*[Header("Player")]
+    [Header("Player")]
     public GameObject player;
     public GameObject cam;
     public GameObject spawnLoc;
-    */
+    
     // Start is called before the first frame update
     void Start()
     {
 
-        /* GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
-         pSa.transform.parent = null;
-         pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
-         //pSa.transform.position = new Vector3(pSa.transform.position.x, transformBoi.position.y + 100, pSa.transform.position.z);
-         cam.GetComponent<MoveCamera>().player = pSa.transform;
-        */
+        GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
+        pSa.transform.parent = null;
+        pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
+        cam.GetComponent<MoveCamera>().player = pSa.transform;
+        
         int i = 0;
         foreach (Transform transformBoi in root.transform)
         {

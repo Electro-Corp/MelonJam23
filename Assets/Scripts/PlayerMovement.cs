@@ -11,7 +11,7 @@ public class PlayerMovement : MonoBehaviour
 
 	private float sensMultiplier = 1f;
 
-	private bool dead;
+	private bool dead = false;
 
 	public PhysicMaterial deadMat;
 
@@ -199,7 +199,7 @@ public class PlayerMovement : MonoBehaviour
 
 	private void FixedUpdate()
 	{
-		if (!dead && !Game.Instance.done && !paused)
+		if (!dead && /*!Game.Instance.done &&*/ !paused)
 		{
 			Movement();
 		}
@@ -209,7 +209,7 @@ public class PlayerMovement : MonoBehaviour
 	{
 		UpdateActionMeter();
 		MyInput();
-		if (!dead && !Game.Instance.done && !paused)
+		if (!dead /*&& !Game.Instance.done*/ && !paused)
 		{
 			Look();
 			DrawGrabbing();
@@ -223,7 +223,7 @@ public class PlayerMovement : MonoBehaviour
 
 	private void MyInput()
 	{
-		if (dead || Game.Instance.done)
+		if (dead /*|| Game.Instance.done*/)
 		{
 			return;
 		}
@@ -284,7 +284,7 @@ public class PlayerMovement : MonoBehaviour
 			if (paused)
 			{
 				Time.timeScale = 1f;
-				UIManger.Instance.DeadUI(b: false);
+				//UIManger.Instance.DeadUI(b: false);
 				Cursor.lockState = CursorLockMode.Locked;
 				Cursor.visible = false;
 				paused = false;
@@ -293,7 +293,7 @@ public class PlayerMovement : MonoBehaviour
 			{
 				paused = true;
 				Time.timeScale = 0f;
-				UIManger.Instance.DeadUI(b: true);
+				//UIManger.Instance.DeadUI(b: true);
 				Cursor.lockState = CursorLockMode.None;
 				Cursor.visible = true;
 			}
@@ -302,7 +302,7 @@ public class PlayerMovement : MonoBehaviour
 
 	private void UpdateTimescale()
 	{
-		if (!Game.Instance.done && !paused && !dead)
+		if (/*!Game.Instance.done &&*/ !paused && !dead)
 		{
 			Time.timeScale = Mathf.SmoothDamp(Time.timeScale, desiredTimeScale, ref timeScaleVel, 0.15f);
 		}
