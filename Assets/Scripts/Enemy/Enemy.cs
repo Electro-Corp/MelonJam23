@@ -9,7 +9,7 @@ public class Enemy : MonoBehaviour
     public Transform[] enemies;
 
     public Transform player = null;
-    public float range = 20f;
+    public float range = 100f;
 
     public float MAXHEALTH = 100;
     public float health = 100;

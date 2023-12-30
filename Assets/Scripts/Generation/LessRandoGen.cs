@@ -20,19 +20,24 @@ public class LessRandoGen : MonoBehaviour
     public GameObject cam;
     public GameObject spawnLoc;
     public GameObject grapGun;
-    
+
+    private bool yeah = false;
+
+    GameObject pSa;
     // Start is called before the first frame update
     void Start()
     {
 
-        GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
+        pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
         GameObject grap = Instantiate(grapGun, pSa.transform.position, pSa.transform.rotation);
         pSa.transform.parent = null;
         grap.transform.parent = cam.transform;
         
         pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
         cam.GetComponent<MoveCamera>().player = pSa.transform;
-        
+
+       
+
         int i = 0;
         foreach (Transform transformBoi in root.transform)
         {
@@ -53,6 +58,15 @@ public class LessRandoGen : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       
+        if (!yeah)
+        {
+            // give each enemy player
+            GameObject[] badbois = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (GameObject e in badbois)
+            {
+                e.GetComponent<Enemy>().player = pSa.transform;
+            }
+            yeah = true;
+        }  
     }
 }
