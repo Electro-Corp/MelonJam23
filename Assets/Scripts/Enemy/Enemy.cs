@@ -8,7 +8,7 @@ public class Enemy : MonoBehaviour
     public Transform[] covers;
     public Transform[] enemies;
 
-    public Transform player;
+    public Transform player = null;
     public float range = 20f;
 
     public float MAXHEALTH = 100;
@@ -19,9 +19,12 @@ public class Enemy : MonoBehaviour
     public string targetToKill;
 
 
-    private bool intransit;
-    private Transform location;
+    public bool intransit;
+    public Transform location;
     private float maxRange;
+
+    private bool over = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -29,11 +32,15 @@ public class Enemy : MonoBehaviour
 
         maxRange = range;
 
+        
+
         GameObject[] target = GameObject.FindGameObjectsWithTag("Cover");
         covers = new Transform[target.Length];
         for (int i = 0; i < target.Length; i++)
         {
-            covers[i] = target[i].transform;
+            if (target[i].transform.parent.name.Equals(transform.parent.name))
+                covers[i] = target[i].transform;
+            
         }
         
     }
@@ -44,51 +51,69 @@ public class Enemy : MonoBehaviour
         health = transform.GetComponent<Human>().health;
         if (health > 0f)
         {
-
-            range = maxRange - ((health / MAXHEALTH) / 20);
-            location = player;
-
-            if (Random.Range(0, MAXHEALTH) >= health && !intransit)
+            // He dont see, so just like walk around
+            if (player == null)
             {
-                location = getClosestInRange(covers, 100f);
-                intransit = true;
-            }
-            else if (!intransit)
-            {
-                intransit = true;
-                if (Vector3.Distance(this.transform.position, player.position) > range)
+                if (!intransit)
                 {
-                    if (transform.GetComponent<Human>().last)
+                    location = getClosestInRange(covers, 100f);
+                    intransit = true;
+                }
+            }
+            else
+            {
+                range = maxRange - ((health / MAXHEALTH) / 20);
+                location = player;
+
+                if (Random.Range(0, MAXHEALTH) >= health && !intransit)
+                {
+                    location = getClosestInRange(covers, 100f);
+                    intransit = true;
+                }
+                else if (!intransit)
+                {
+                    intransit = true;
+                    if (Vector3.Distance(this.transform.position, player.position) > range)
                     {
-                        location = transform.GetComponent<Human>().last;//player;
-                        //transform.Find("GUN").transform.GetComponent<EnemyGun>().player = transform.GetComponent<Human>().last;
-                        Debug.Log(transform.GetComponent<Human>().last);
+                        if (transform.GetComponent<Human>().last)
+                        {
+                            location = transform.GetComponent<Human>().last;//player;
+                                                                            //transform.Find("GUN").transform.GetComponent<EnemyGun>().player = transform.GetComponent<Human>().last;
+                            Debug.Log(transform.GetComponent<Human>().last);
+                        }
+                        else
+                        {
+
+                            location = player;
+                            transform.Find("GUN").transform.GetComponent<EnemyGun>().player = player;
+                            over = true;
+                        }
                     }
                     else
                     {
-                        location = player;
-                        transform.Find("GUN").transform.GetComponent<EnemyGun>().player = player;
+                        Debug.Log("Close enough ngl");
+                        intransit = false;
+                        transform.Find("GUN").transform.GetComponent<EnemyGun>().decideShoot();
+                        location = this.transform;
                     }
-                }
-                else
-                {
-                    Debug.Log("Close enough ngl");
-                    intransit = false;
-                    transform.Find("GUN").transform.GetComponent<EnemyGun>().decideShoot();
-                    location = this.transform;
                 }
             }
             /*if (!intransit)
             {
                 location = player;
             }*/
-            if (Vector3.Distance(this.transform.position, location.position) < 10 && intransit)
+            if (Vector3.Distance(this.transform.position, location.position) < 5 && intransit)
             {
                 Debug.Log("YEAH!");
                 intransit = false;
             }
-            if(intransit)
-                agent.SetDestination(location.position);    
+            if (intransit)
+            {
+                if (agent.velocity.magnitude < 1 || over) {
+                    agent.SetDestination(location.position);
+                    over = false;
+                }
+            }
         }
         else
         {
@@ -97,21 +122,30 @@ public class Enemy : MonoBehaviour
     }
     Transform getClosestInRange(Transform[] arr, float range)
     {
+
         Transform near = arr[0];
-        float prevDiff = 0f;
-        for (int i = 0; i < arr.Length; i++)
+        int i = 0;
+        while(near == null)
         {
-
-            if (Vector3.Distance(arr[i].position, transform.position) > prevDiff && Vector3.Distance(arr[i].position, transform.position) < range)
+            near = arr[i++];
+        }
+        float prevDiff = 0f;
+        for (i = 0; i < arr.Length; i++)
+        {
+            if (arr[i] != null)
             {
-                /*if (transform.tag == targetToKill && transform.GetComponent<Human>().health > 0 || transform.tag != targetToKill)
-                {
-                    near = arr[i];
-                    prevDiff = Vector3.Distance(arr[i].position, player.position);
-                }*/
-                near = arr[i];
-                prevDiff = Vector3.Distance(arr[i].position, transform.position);
 
+                if (Vector3.Distance(arr[i].position, transform.position) > prevDiff && Vector3.Distance(arr[i].position, transform.position) < range && Random.RandomRange(0,2) == 1)
+                {
+                    /*if (transform.tag == targetToKill && transform.GetComponent<Human>().health > 0 || transform.tag != targetToKill)
+                    {
+                        near = arr[i];
+                        prevDiff = Vector3.Distance(arr[i].position, player.position);
+                    }*/
+                    near = arr[i];
+                    prevDiff = Vector3.Distance(arr[i].position, transform.position);
+
+                }
             }
         }
         return near;

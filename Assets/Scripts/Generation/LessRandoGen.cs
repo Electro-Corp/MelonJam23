@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.XR;
 
 public class LessRandoGen : MonoBehaviour
@@ -23,22 +24,25 @@ public class LessRandoGen : MonoBehaviour
     void Start()
     {
 
-       /* GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
-        pSa.transform.parent = null;
-        pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
-        //pSa.transform.position = new Vector3(pSa.transform.position.x, transformBoi.position.y + 100, pSa.transform.position.z);
-        cam.GetComponent<MoveCamera>().player = pSa.transform;
-       */
+        /* GameObject pSa = Instantiate(player, spawnLoc.transform.position, spawnLoc.transform.rotation);
+         pSa.transform.parent = null;
+         pSa.GetComponent<PlayerMovement>().playerCam = cam.transform;
+         //pSa.transform.position = new Vector3(pSa.transform.position.x, transformBoi.position.y + 100, pSa.transform.position.z);
+         cam.GetComponent<MoveCamera>().player = pSa.transform;
+        */
+        int i = 0;
         foreach (Transform transformBoi in root.transform)
         {
             if (transformBoi.tag.Equals("LocGen"))
             {
                 GameObject funny = Instantiate(prefabs[Random.Range(0, prefabs.Count)], transformBoi.position, transformBoi.rotation);
+                funny.transform.name = funny.transform.name + i.ToString();
                 funny.transform.parent = transformBoi.parent;
                 
                 //funny.transform.localScale = transform.localScale;
                 Destroy(transformBoi.gameObject);
             }
+            i++;
         }
     }
 
