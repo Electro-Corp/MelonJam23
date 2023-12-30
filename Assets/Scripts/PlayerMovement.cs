@@ -173,7 +173,7 @@ public class PlayerMovement : MonoBehaviour
 		CameraShake();
 		if (spawnWeapon != null)
 		{
-			GameObject gameObject = UnityEngine.Object.Instantiate(spawnWeapon, transform.position, Quaternion.identity);
+			GameObject gameObject = Instantiate(spawnWeapon, transform.position, Quaternion.identity);
 			detectWeapons.ForcePickup(gameObject);
 		}
 		UpdateSensitivity();

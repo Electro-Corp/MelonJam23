@@ -36,7 +36,7 @@ public class Grappler : Pickup
 	private void Start()
 	{
 		tip = transform.GetChild(0);
-		lr = GetComponent<LineRenderer>();
+		lr = GetComponentInChildren<LineRenderer>();
 		lr.positionCount = positions;
 		aim.transform.parent = null;
 		aim.SetActive(value: false);
@@ -148,7 +148,7 @@ public class Grappler : Pickup
 
 	public override void StopUse()
 	{
-		UnityEngine.Object.Destroy(joint);
+		Destroy(joint);
 		grapplePoint = Vector3.zero;
 		grappling = false;
 	}
