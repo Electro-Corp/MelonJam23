@@ -62,7 +62,7 @@ public class Enemy : MonoBehaviour
             }
             else
             {
-                range = maxRange - ((health / MAXHEALTH) / 20);
+                range = maxRange - ((health / MAXHEALTH));
                 location = player;
 
                 if (Random.Range(0, MAXHEALTH) >= health && !intransit)
@@ -77,9 +77,10 @@ public class Enemy : MonoBehaviour
                     {
                         if (transform.GetComponent<Human>().last)
                         {
-                            location = transform.GetComponent<Human>().last;//player;
-                                                                            //transform.Find("GUN").transform.GetComponent<EnemyGun>().player = transform.GetComponent<Human>().last;
-                            Debug.Log(transform.GetComponent<Human>().last);
+                            //location = transform.GetComponent<Human>().last;//player;
+                            //transform.Find("GUN").transform.GetComponent<EnemyGun>().player = transform.GetComponent<Human>().last;
+                            //Debug.Log(transform.GetComponent<Human>().last);
+                            location = getClosestInRange(covers, 100f);
                         }
                         else
                         {

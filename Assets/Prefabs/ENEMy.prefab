@@ -184,7 +184,7 @@ MonoBehaviour:
   covers: []
   enemies: []
   player: {fileID: 0}
-  range: 20
+  range: 10
   MAXHEALTH: 100
   health: 100
   isDead: 0
